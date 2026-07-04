@@ -1,0 +1,29 @@
+{
+  "_comment": "M0: drop these into settings.json as spinnerVerbs (mode: replace) for zero-code trivia flavor in the spinner itself. install.sh --spinner does this for you.",
+  "verbs": [
+    "Octopuses have three hearts…",
+    "Honey never spoils…",
+    "A group of flamingos is a 'flamboyance'…",
+    "Bananas are berries; strawberries aren't…",
+    "The first computer bug was a literal moth…",
+    "Git was written by Linus Torvalds in ~2 weeks…",
+    "'Bit' is short for 'binary digit'…",
+    "There are more stars than grains of sand on Earth…",
+    "The '@' symbol predates email by centuries…",
+    "Sharks are older than trees…",
+    "A day on Venus is longer than its year…",
+    "The first webcam watched a coffee pot…",
+    "Wombat poop is cube-shaped…",
+    "The Eiffel Tower grows ~15cm taller in summer…",
+    "Python is named after Monty Python, not the snake…",
+    "There are ~10^80 atoms in the observable universe…",
+    "The word 'robot' comes from Czech 'robota' (forced labor)…",
+    "Hexadecimal 0xC0FFEE is a valid number…",
+    "A 'jiffy' is a real unit of time (~1/100th of a second)…",
+    "The QWERTY layout was designed in the 1870s…",
+    "Lightning is ~5x hotter than the Sun's surface…",
+    "The Apollo Guidance Computer had ~4KB of RAM…",
+    "Cows have best friends and get stressed apart…",
+    "'Google' was originally a misspelling of 'googol'…"
+  ]
+}
