@@ -51,6 +51,7 @@ def load_config(state_dir):
     cfg.setdefault("lingerSeconds", 2)
     cfg.setdefault("categories", ["tech", "science", "general", "history"])
     cfg.setdefault("sound", False)
+    cfg.setdefault("autoCloseTerminal", True)
     return cfg
 
 
@@ -246,6 +247,64 @@ def refresh_questions(path, amount, categories):
 # Game                                                                         #
 # --------------------------------------------------------------------------- #
 
+def close_own_terminal_window():
+    """Best-effort: on macOS Terminal.app / iTerm2, close the GUI window this
+    game is running in once it exits. (In a tmux pane the pane self-closes, so
+    this is a no-op there.)
+
+    A detached `delay 0.4` closer is used so it fires *after* this Python
+    process has exited — by then only the login shell remains in the window, so
+    Terminal closes it without the "terminate running processes?" prompt. The
+    window is matched by tty so we only ever close our own window.
+    """
+    import subprocess
+
+    if sys.platform != "darwin" or os.environ.get("TMUX"):
+        return
+    term = os.environ.get("TERM_PROGRAM", "")
+    try:
+        tty = os.ttyname(0)
+    except OSError:
+        try:
+            tty = os.ttyname(sys.stdout.fileno())
+        except (OSError, ValueError):
+            return
+
+    if term == "Apple_Terminal":
+        script = (
+            'delay 0.4\n'
+            'tell application "Terminal"\n'
+            f'  close (every window whose tty is "{tty}") saving no\n'
+            'end tell'
+        )
+    elif term == "iTerm.app":
+        script = (
+            'delay 0.4\n'
+            'tell application "iTerm2"\n'
+            '  repeat with w in windows\n'
+            '    repeat with t in tabs of w\n'
+            '      repeat with s in sessions of t\n'
+            f'        if (tty of s) is "{tty}" then close t\n'
+            '      end repeat\n'
+            '    end repeat\n'
+            '  end repeat\n'
+            'end tell'
+        )
+    else:
+        return
+
+    try:
+        # start_new_session detaches the closer from this window's foreground
+        # process group so it survives our exit and can act on the window.
+        subprocess.Popen(
+            ["osascript", "-e", script],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError:
+        pass
+
+
 class TriviaGame:
     def __init__(self, stdscr, questions, cfg, state_dir, stop_file):
         self.scr = stdscr
@@ -434,6 +493,10 @@ class TriviaGame:
         self.scr.timeout(POLL_MS)
         while time.monotonic() < deadline:
             self.scr.getch()
+
+        # Fire the (detached) GUI-terminal auto-close; harmless in tmux/SSH.
+        if self.cfg.get("autoCloseTerminal", True):
+            close_own_terminal_window()
 
 
 # --------------------------------------------------------------------------- #

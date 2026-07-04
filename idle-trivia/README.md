@@ -92,6 +92,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
   "paneHeight": 12,
   "categories": ["tech", "science", "general", "history"],
   "fallbackWithoutTmux": "terminal-window",
+  "autoCloseTerminal": true,
   "sound": false
 }
 ```
@@ -104,6 +105,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `lingerSeconds` | Summary dwell time for `linger`. |
 | `paneHeight` | tmux split height, in rows. |
 | `categories` | Which categories to draw from (also which ones `--refresh` pulls). |
+| `autoCloseTerminal` | On macOS Terminal.app / iTerm2, auto-close the game's own window on wrap-up. Set `false` if you'd rather close it yourself. |
 
 ---
 
@@ -150,10 +152,12 @@ risk — even the spinner then carries content.
 ## Limitations
 
 - **GUI-terminal auto-close:** in a **tmux** pane the game closes itself cleanly
-  when it exits. In a spawned **GUI terminal window**, the game exits and prints
-  "safe to close this window," but whether the *window* auto-closes depends on
-  that terminal's "close on clean exit" setting. tmux is the smoothest
-  experience; recommended if you have it.
+  when it exits. On **macOS Terminal.app / iTerm2** the game also auto-closes its
+  own window on wrap-up (matched by tty, fired detached so no "terminate running
+  processes?" prompt appears) — disable with `"autoCloseTerminal": false`. On
+  other Linux GUI emulators the game exits and prints "safe to close this
+  window," but whether the *window* itself closes depends on that terminal's
+  "close on clean exit" setting. tmux is still the smoothest experience.
 - **Bare SSH, no tmux:** nothing to render into — the hook logs a one-time note
   to `~/.claude/trivia/trivia.log` and stays silent. `screen` support is a
   future candidate.

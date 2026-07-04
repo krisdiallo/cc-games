@@ -6,5 +6,6 @@
   "paneHeight": 12,
   "categories": ["tech", "science", "general", "history"],
   "fallbackWithoutTmux": "terminal-window",
+  "autoCloseTerminal": true,
   "sound": false
 }
