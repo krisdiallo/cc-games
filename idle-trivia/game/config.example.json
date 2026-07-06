@@ -1,6 +1,7 @@
 {
   "enabled": true,
   "debounceSeconds": 8,
+  "openOnToolUse": true,
   "stopBehavior": "linger",
   "lingerSeconds": 2,
   "paneHeight": 12,

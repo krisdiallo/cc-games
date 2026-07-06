@@ -10,10 +10,16 @@ no modifying the binary. The game lives in a separate process because
 [hooks cannot draw to the Claude Code terminal](https://code.claude.com/docs/en/hooks).
 
 ```
-UserPromptSubmit ──► start-trivia.sh ──► (debounce) ──► trivia game in a side pane
-Stop             ──► stop-trivia.sh  ──► touch <session>.stop ──► game wraps up & closes
-SessionEnd       ──► cleanup.sh      ──► kill pane, delete markers
+UserPromptSubmit ──► start-trivia.sh  ──► (debounce) ──► trivia game in a side pane
+PreToolUse       ──► tool-activity.sh ──► touch <session>.go ──► render NOW (skip the rest of the debounce)
+Stop             ──► stop-trivia.sh   ──► touch <session>.stop ──► game wraps up & closes
+SessionEnd       ──► cleanup.sh       ──► kill pane, delete markers
 ```
+
+The first tool call of a turn is the tell that this is a real task, not a quick
+text answer — so the game opens within ~1s of it instead of waiting out the full
+debounce. Pure-reasoning turns (no tool calls) still render at `debounceSeconds`,
+and quick answers that finish inside the debounce never flash a pane at all.
 
 ---
 
@@ -100,7 +106,8 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | Key | Meaning |
 |-----|---------|
 | `enabled` | Master on/off switch. |
-| `debounceSeconds` | Wait this long before rendering, so **quick turns never flash a pane**. If Claude finishes first, the game never appears. |
+| `debounceSeconds` | Wait this long before rendering, so **quick turns never flash a pane**. If Claude finishes first, the game never appears. With `openOnToolUse` this is the *fallback* for turns that never call a tool (e.g. pure-reasoning answers). |
+| `openOnToolUse` | Render as soon as Claude makes its **first tool call** of the turn (a reliable "this is a real task" signal) instead of waiting out the full debounce. Default `true`. |
 | `stopBehavior` | `immediate` (close at once), `linger` (show the summary for `lingerSeconds`, default), or `finish-question` (let you complete the current question first). |
 | `lingerSeconds` | Summary dwell time for `linger`. |
 | `paneHeight` | tmux split height, in rows. |
@@ -169,7 +176,7 @@ risk — even the spinner then carries content.
 ## State & logs
 
 Everything runtime lives under `~/.claude/trivia/`, keyed by `session_id`:
-`<session>.pid`, `<session>.pane`, `<session>.stop`, `<session>.pending`,
+`<session>.pid`, `<session>.pane`, `<session>.stop`, `<session>.pending`, `<session>.go`,
 plus `stats.json` (flock-guarded for multiple concurrent sessions) and
 `trivia.log`. `SessionEnd` cleans a session's markers up.
 
@@ -182,6 +189,7 @@ idle-trivia/
 ├── scripts/
 │   ├── common.sh                # shared helpers (json parse, config, spawn)
 │   ├── start-trivia.sh          # UserPromptSubmit: spawn detached launcher
+│   ├── tool-activity.sh         # PreToolUse: first tool call → render early
 │   ├── _launch.sh               # debounce, then render the game
 │   ├── stop-trivia.sh           # Stop: signal wrap-up
 │   ├── cleanup.sh               # SessionEnd: tear down

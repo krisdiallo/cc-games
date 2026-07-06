@@ -54,6 +54,7 @@ except (OSError, ValueError):
 hooks = settings.setdefault("hooks", {})
 wanted = {
     "UserPromptSubmit": os.path.join(scripts, "start-trivia.sh"),
+    "PreToolUse":       os.path.join(scripts, "tool-activity.sh"),
     "Stop":             os.path.join(scripts, "stop-trivia.sh"),
     "SessionEnd":       os.path.join(scripts, "cleanup.sh"),
 }

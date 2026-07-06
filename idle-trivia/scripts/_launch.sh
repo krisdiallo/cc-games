@@ -11,24 +11,32 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GAME="$SCRIPT_DIR/../game/trivia.py"
 STOP_FILE="$TRIVIA_HOME/$SESSION_ID.stop"
 PENDING="$TRIVIA_HOME/$SESSION_ID.pending"
+GO_FILE="$TRIVIA_HOME/$SESSION_ID.go"
 
 DEBOUNCE="$(config_get debounceSeconds 8)"
 case "$DEBOUNCE" in ''|*[!0-9]*) DEBOUNCE=8;; esac
 
+rm -f "$GO_FILE" 2>/dev/null || true   # only honor tool activity from THIS turn
 touch "$PENDING" 2>/dev/null || true
 
-# Debounce loop: bail the instant Claude's done so quick turns never flash a pane.
+# Debounce loop: bail the instant Claude's done so quick turns never flash a
+# pane; render early the moment a tool call marks this turn as a real task
+# (tool-activity.sh touches the go file). Stop always wins over go.
 slept=0
 while [ "$slept" -lt "$DEBOUNCE" ]; do
   sleep 1
   slept=$((slept + 1))
   if [ -f "$STOP_FILE" ]; then
     log info "stop arrived during debounce; not rendering ($SESSION_ID)"
-    rm -f "$PENDING" "$STOP_FILE" 2>/dev/null || true
+    rm -f "$PENDING" "$STOP_FILE" "$GO_FILE" 2>/dev/null || true
     exit 0
   fi
+  if [ -f "$GO_FILE" ]; then
+    log info "tool activity after ${slept}s; rendering early ($SESSION_ID)"
+    break
+  fi
 done
-rm -f "$PENDING" 2>/dev/null || true
+rm -f "$PENDING" "$GO_FILE" 2>/dev/null || true
 
 # Race guard: another launcher may have already rendered a game.
 if [ -f "$TRIVIA_HOME/$SESSION_ID.pid" ] && \
