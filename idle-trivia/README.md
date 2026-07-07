@@ -1,9 +1,18 @@
-# Idle Trivia
+# Idle Trivia (& friends)
 
-Fills Claude Code's wait-state with an interruptible multiple-choice trivia game.
-When you submit a prompt, a small trivia game pops up in a **side terminal window
-or tmux pane**; the moment Claude finishes, it shows your score and gets out of
-the way.
+Fills Claude Code's wait-state with interruptible brain games. When you submit
+a prompt, a small game pops up in a **side terminal window or tmux pane**; the
+moment Claude finishes, it shows your score and gets out of the way.
+
+Five games ship today (press `g` in-game to cycle between them):
+
+| Game | Config name | The gist |
+|------|-------------|----------|
+| Trivia | `trivia` | Multiple-choice questions from the bundled bank (+ Open Trivia DB refresh). |
+| Sequences | `sequences` | "2, 6, 18, 54, …?" — pick the next term; difficulty ramps with your streak. |
+| Word games | `words` | Anagram unscrambles and odd-one-out picks. |
+| Simon | `simon` | Watch the pads flash, repeat the sequence; grows by one each success. |
+| N-back | `nback` | Letter stream; hit SPACE when the letter matches the one N back. |
 
 Built entirely on Claude Code's **public hooks API** — no patching of the TUI,
 no modifying the binary. The game lives in a separate process because
@@ -70,8 +79,10 @@ To distribute, add it to a plugin marketplace repo and install with `/plugin`.
 
 | Key | Action |
 |-----|--------|
-| `1`–`4` | Answer |
-| `s` | Skip |
+| `1`–`4` | Answer / repeat pads (Simon) |
+| `SPACE` | Match signal (n-back) |
+| `s` | Skip (multiple-choice games) |
+| `g` | Switch to the next game |
 | `p` | Pause / resume |
 | `q` | Quit the game (won't respawn until your next prompt) |
 
@@ -111,7 +122,10 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `stopBehavior` | `immediate` (close at once), `linger` (show the summary for `lingerSeconds`, default), or `finish-question` (let you complete the current question first). |
 | `lingerSeconds` | Summary dwell time for `linger`. |
 | `paneHeight` | tmux split height, in rows. |
-| `categories` | Which categories to draw from (also which ones `--refresh` pulls). |
+| `games` | Which games are enabled (see the table up top). `g` cycles through these. |
+| `game` | Which game starts a session: a game name, or `random` (default). |
+| `nbackN` | N for the n-back game (default 2). |
+| `categories` | Trivia: which categories to draw from (also which ones `--refresh` pulls). |
 | `autoCloseTerminal` | On macOS Terminal.app / iTerm2, auto-close the game's own window on wrap-up. Set `false` if you'd rather close it yourself. |
 
 ---
@@ -195,7 +209,15 @@ idle-trivia/
 │   ├── cleanup.sh               # SessionEnd: tear down
 │   └── install.sh               # personal installer / uninstaller
 └── game/
-    ├── trivia.py                # the curses game (+ --refresh)
+    ├── trivia.py                # entry point (name kept for hook compat)
+    ├── shell.py                 # shared shell: curses, stop protocol, stats
+    ├── games/
+    │   ├── trivia.py            # MCQ trivia (+ --refresh)
+    │   ├── sequences.py         # number patterns (procedural)
+    │   ├── words.py             # anagrams + odd-one-out
+    │   ├── words.json           # bundled word data
+    │   ├── simon.py             # sequence memory
+    │   └── nback.py             # letter n-back
     ├── questions.json           # ~60-question seed bank
     ├── config.example.json      # default config
     └── spinner-facts.json       # M0 spinnerVerbs content
