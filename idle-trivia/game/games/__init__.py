@@ -7,7 +7,7 @@ A Game implements:
     play_round(shell) -> True (correct) | False (wrong) | None (skipped)
 """
 
-from . import nback, sequences, simon, trivia, words
+from . import dungeon, nback, sequences, simon, trivia, words
 
 REGISTRY = {
     "trivia": trivia.TriviaGame,
@@ -15,6 +15,7 @@ REGISTRY = {
     "words": words.WordsGame,
     "simon": simon.SimonGame,
     "nback": nback.NBackGame,
+    "dungeon": dungeon.DungeonGame,
 }
 
 

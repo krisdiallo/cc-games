@@ -8,6 +8,7 @@ Five games ship today (press `g` in-game to cycle between them):
 
 | Game | Config name | The gist |
 |------|-------------|----------|
+| **Dungeon** (default) | `dungeon` | A roguelite: one room per wait — telegraphed fights, chests, traps, shrines, merchants; a boss every 5th floor. Your hero **persists forever** (`dungeon.json`): a fight freezes mid-swing when Claude finishes and resumes on your next prompt, and dying banks shards for permanent guild upgrades. |
 | Trivia | `trivia` | Multiple-choice questions from the bundled bank (+ Open Trivia DB refresh). |
 | Sequences | `sequences` | "2, 6, 18, 54, …?" — pick the next term; difficulty ramps with your streak. |
 | Word games | `words` | Anagram unscrambles and odd-one-out picks. |
@@ -123,7 +124,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `lingerSeconds` | Summary dwell time for `linger`. |
 | `paneHeight` | tmux split height, in rows. |
 | `games` | Which games are enabled (see the table up top). `g` cycles through these. |
-| `game` | Which game starts a session: a game name, or `random` (default). |
+| `game` | Which game starts a session: a game name (default `dungeon`), or `random`. |
 | `nbackN` | N for the n-back game (default 2). |
 | `categories` | Trivia: which categories to draw from (also which ones `--refresh` pulls). |
 | `autoCloseTerminal` | On macOS Terminal.app / iTerm2, auto-close the game's own window on wrap-up. Set `false` if you'd rather close it yourself. |
@@ -212,6 +213,7 @@ idle-trivia/
     ├── trivia.py                # entry point (name kept for hook compat)
     ├── shell.py                 # shared shell: curses, stop protocol, stats
     ├── games/
+    │   ├── dungeon.py           # persistent roguelite (saves to dungeon.json)
     │   ├── trivia.py            # MCQ trivia (+ --refresh)
     │   ├── sequences.py         # number patterns (procedural)
     │   ├── words.py             # anagrams + odd-one-out
