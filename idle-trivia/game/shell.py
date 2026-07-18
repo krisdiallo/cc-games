@@ -238,6 +238,9 @@ class Shell:
         self.cfg = cfg
         self.state_dir = state_dir
         self.stop_file = stop_file
+        # <session>.attn — touched by the Notification hook when Claude is
+        # blocked on the user (permission approval, question, idle prompt).
+        self.attn_file = stop_file[:-len(".stop")] + ".attn"
         self.games = games                  # ordered list of Game instances
         self.game = None                    # current Game
         self.session_answered = 0
@@ -246,6 +249,7 @@ class Shell:
         self.best_streak = 0
         self.paused = False
         self.stop_pending = False           # stop seen in finish-question mode
+        self.attention = False              # Claude is waiting on the user
 
     # -- stop protocol ------------------------------------------------------ #
     def stop_requested(self):
@@ -256,7 +260,19 @@ class Shell:
 
     def _check_stop(self):
         """Raise ShellStop on stop — or, in finish-question mode, just set the
-        banner flag and let the current round complete."""
+        banner flag and let the current round complete. Also tracks the
+        attention marker (Claude waiting on the user) and rings once when it
+        appears."""
+        attn = os.path.exists(self.attn_file)
+        if attn != self.attention:
+            self.attention = attn
+            if attn:
+                try:
+                    curses.beep()
+                except curses.error:
+                    pass
+            self.draw_header()
+            self.scr.refresh()
         if not self.stop_requested():
             return
         if self._finish_question_mode():
@@ -378,6 +394,12 @@ class Shell:
         if self.stop_pending:
             self.put(1, 0, " ✅ Claude's done — finish this round ",
                      curses.color_pair(WARN) | curses.A_BOLD)
+        elif self.attention:
+            self.put(1, 0, " ⚠ CLAUDE IS WAITING FOR YOU — check the Claude "
+                           "window (approval/question) ",
+                     curses.color_pair(BAD) | curses.A_BOLD | curses.A_REVERSE)
+        else:
+            self.put(1, 0, " " * (w - 1))   # clear a lifted banner
 
     def draw_footer(self):
         h, _ = self.scr.getmaxyx()

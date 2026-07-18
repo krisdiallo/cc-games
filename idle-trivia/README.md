@@ -20,11 +20,28 @@ no modifying the binary. The game lives in a separate process because
 [hooks cannot draw to the Claude Code terminal](https://code.claude.com/docs/en/hooks).
 
 ```
-UserPromptSubmit ──► start-trivia.sh  ──► (debounce) ──► trivia game in a side pane
-PreToolUse       ──► tool-activity.sh ──► touch <session>.go ──► render NOW (skip the rest of the debounce)
-Stop             ──► stop-trivia.sh   ──► touch <session>.stop ──► game wraps up & closes
-SessionEnd       ──► cleanup.sh       ──► kill pane, delete markers
+UserPromptSubmit ──► start-trivia.sh     ──► (debounce) ──► game in a side pane
+PreToolUse       ──► tool-activity.sh    ──► touch <session>.go ──► render NOW (skip the rest of the debounce)
+Notification     ──► notify-attention.sh ──► touch <session>.attn ──► ⚠ banner + bell + macOS notification
+Pre/PostToolUse  ──► tool-activity.sh    ──► rm <session>.attn (Claude is working again)
+Stop             ──► stop-trivia.sh      ──► touch <session>.stop ──► game wraps up & closes
+SessionEnd       ──► cleanup.sh          ──► kill pane, delete markers
 ```
+
+**Claude is waiting on YOU:** when Claude blocks on a permission approval, a
+question, or goes idle, the `Notification` hook flips the game into an
+unmissable state — a red banner + terminal bell in the pane, plus a macOS
+system notification (`systemNotifications` config) that reaches you even if
+the game window is buried or closed. The game never steals focus (stray
+keystrokes near an approval prompt are dangerous); it tells you loudly and
+stays out of the way. The banner lifts on its own the moment Claude resumes.
+
+**One window, ever:** the game takes an exclusive `flock` on
+`~/.claude/trivia/game.lock` for its lifetime, so at most one game window
+exists across *all* concurrent Claude sessions. Hook scripts pre-check the
+lock cheaply and skip spawning; if a race sneaks one through, the duplicate
+exits and closes its own window immediately. OS-level locks die with the
+process — no stale state.
 
 The first tool call of a turn is the tell that this is a real task, not a quick
 text answer — so the game opens within ~1s of it instead of waiting out the full
@@ -128,6 +145,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `nbackN` | N for the n-back game (default 2). |
 | `categories` | Trivia: which categories to draw from (also which ones `--refresh` pulls). |
 | `autoCloseTerminal` | On macOS Terminal.app / iTerm2, auto-close the game's own window on wrap-up. Set `false` if you'd rather close it yourself. |
+| `systemNotifications` | macOS notification when Claude is waiting on your input (approval, question, idle). Default `true`. |
 
 ---
 
@@ -191,7 +209,7 @@ risk — even the spinner then carries content.
 ## State & logs
 
 Everything runtime lives under `~/.claude/trivia/`, keyed by `session_id`:
-`<session>.pid`, `<session>.pane`, `<session>.stop`, `<session>.pending`, `<session>.go`,
+`<session>.pid`, `<session>.pane`, `<session>.stop`, `<session>.pending`, `<session>.go`, `<session>.attn`, `game.lock`,
 plus `stats.json` (flock-guarded for multiple concurrent sessions) and
 `trivia.log`. `SessionEnd` cleans a session's markers up.
 
@@ -204,7 +222,8 @@ idle-trivia/
 ├── scripts/
 │   ├── common.sh                # shared helpers (json parse, config, spawn)
 │   ├── start-trivia.sh          # UserPromptSubmit: spawn detached launcher
-│   ├── tool-activity.sh         # PreToolUse: first tool call → render early
+│   ├── tool-activity.sh         # Pre/PostToolUse: render early + clear attn
+│   ├── notify-attention.sh      # Notification: Claude is waiting on the user
 │   ├── _launch.sh               # debounce, then render the game
 │   ├── stop-trivia.sh           # Stop: signal wrap-up
 │   ├── cleanup.sh               # SessionEnd: tear down

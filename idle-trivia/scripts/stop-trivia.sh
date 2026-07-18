@@ -14,7 +14,9 @@ SESSION_ID="$(json_field "$INPUT" session_id)"
 
 # The game polls this file (~250ms) and enters its stop behavior.
 # It also aborts a not-yet-rendered game still inside the debounce window.
+# The turn is over, so any "waiting on the user" marker is stale too.
 touch "$TRIVIA_HOME/$SESSION_ID.stop" 2>/dev/null || true
+rm -f "$TRIVIA_HOME/$SESSION_ID.attn" 2>/dev/null || true
 log info "stop signaled ($SESSION_ID)"
 
 exit 0

@@ -59,6 +59,17 @@ except Exception:
     print(sys.argv[3])' "$file" "$key" "$default" 2>/dev/null || printf '%s' "$default"
 }
 
+# global_game_alive -> 0 if ANY session's game window is currently open.
+# Reads the pid recorded in game.lock by the running game. This is the cheap
+# pre-check; the game itself holds an exclusive flock on the same file, so a
+# rare race here just means a spawned duplicate exits (and closes its own
+# window) immediately.
+global_game_alive() {
+  local pid
+  pid="$(cat "$TRIVIA_HOME/game.lock" 2>/dev/null)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
 # spawn_in_terminal COMMAND SESSION_ID
 # Tries, in order: tmux split (if inside tmux) -> macOS Terminal -> Linux GUI
 # terminal -> one-time "no UI" warning. Records tmux pane id for cleanup.

@@ -14,6 +14,20 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/tool-activity.sh" }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify-attention.sh" }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

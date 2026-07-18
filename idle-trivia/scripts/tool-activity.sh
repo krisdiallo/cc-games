@@ -17,6 +17,11 @@ INPUT="$(read_stdin)"
 SESSION_ID="$(json_field "$INPUT" session_id)"
 [ -z "$SESSION_ID" ] && SESSION_ID="default"
 
+# Tool activity means Claude is working again — lift any "waiting on the
+# user" banner. (Wired to both PreToolUse and PostToolUse so the approved
+# tool itself clears it when it completes.)
+rm -f "$TRIVIA_HOME/$SESSION_ID.attn" 2>/dev/null || true
+
 # Fast no-op paths: nothing is waiting to render, or we already signaled.
 PENDING="$TRIVIA_HOME/$SESSION_ID.pending"
 GO_FILE="$TRIVIA_HOME/$SESSION_ID.go"

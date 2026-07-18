@@ -19,8 +19,16 @@ if [ "$(config_get enabled true)" != "true" ]; then
 fi
 
 # Multi-turn reuse: a new prompt clears any stop marker so a lingering game
-# un-wraps instead of closing. Also drop a stale go marker from the last turn.
-rm -f "$TRIVIA_HOME/$SESSION_ID.stop" "$TRIVIA_HOME/$SESSION_ID.go" 2>/dev/null || true
+# un-wraps instead of closing. Also drop stale go/attention markers.
+rm -f "$TRIVIA_HOME/$SESSION_ID.stop" "$TRIVIA_HOME/$SESSION_ID.go" \
+      "$TRIVIA_HOME/$SESSION_ID.attn" 2>/dev/null || true
+
+# If ANY game window is already open — this session's or another's — we're
+# done. Exactly one game window ever.
+if global_game_alive; then
+  log info "a game window is already open; not spawning another ($SESSION_ID)"
+  exit 0
+fi
 
 # If a game is already alive for this session, we're done (one game per session).
 PID_FILE="$TRIVIA_HOME/$SESSION_ID.pid"

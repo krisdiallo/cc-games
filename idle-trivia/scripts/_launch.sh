@@ -38,7 +38,12 @@ while [ "$slept" -lt "$DEBOUNCE" ]; do
 done
 rm -f "$PENDING" "$GO_FILE" 2>/dev/null || true
 
-# Race guard: another launcher may have already rendered a game.
+# Race guard: another launcher (any session) may have already rendered a game
+# during our debounce. One window ever.
+if global_game_alive; then
+  log info "a game window opened during debounce; not spawning ($SESSION_ID)"
+  exit 0
+fi
 if [ -f "$TRIVIA_HOME/$SESSION_ID.pid" ] && \
    kill -0 "$(cat "$TRIVIA_HOME/$SESSION_ID.pid" 2>/dev/null)" 2>/dev/null; then
   log info "game already alive after debounce ($SESSION_ID)"

@@ -19,6 +19,7 @@ Stdlib only (curses) — no pip install required.
 
 import argparse
 import curses
+import fcntl
 import os
 import random
 import sys
@@ -39,6 +40,25 @@ def pick_first_game(games, choice):
     if choice in by_name:
         return by_name[choice]
     return random.choice(games)
+
+
+def acquire_global_lock(state_dir):
+    """One game window EVER, across all Claude sessions: take an exclusive
+    flock on state_dir/game.lock for this process's lifetime. The OS releases
+    the lock when the process dies, so it can never go stale. Returns the
+    held file object, or None if another game already owns the lock."""
+    path = os.path.join(state_dir, "game.lock")
+    try:
+        f = open(path, "a+")
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return None
+    # Record our pid so the hook scripts can skip spawning cheaply.
+    f.seek(0)
+    f.truncate()
+    f.write(str(os.getpid()))
+    f.flush()
+    return f
 
 
 def main():
@@ -78,6 +98,14 @@ def main():
             os.remove(stop_file)
         except OSError:
             pass
+        return
+
+    # Another game window is already open (this or any other session):
+    # bow out silently and close the window we were spawned into.
+    lock = acquire_global_lock(args.state_dir)
+    if lock is None:
+        if cfg.get("autoCloseTerminal", True):
+            game_shell.close_own_terminal_window()
         return
 
     with open(pid_file, "w") as f:
