@@ -69,6 +69,8 @@ def main():
     ap.add_argument("--game", default=None,
                     help=f"start with this game ({', '.join(REGISTRY)}) "
                          "or 'random' (default: config)")
+    ap.add_argument("--transcript", default="",
+                    help="session transcript path (for Escape-interrupt detection)")
     ap.add_argument("--refresh", action="store_true",
                     help="fetch fresh questions from Open Trivia DB, then exit")
     ap.add_argument("--amount", type=int, default=50,
@@ -114,7 +116,7 @@ def main():
     game_shell.roll_daily_streak(args.state_dir)
     try:
         curses.wrapper(game_shell.curses_main, cfg, args.state_dir,
-                       stop_file, games, first)
+                       stop_file, games, first, args.transcript)
     finally:
         for p in (pid_file, stop_file):
             try:

@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INPUT="$(read_stdin)"
 SESSION_ID="$(json_field "$INPUT" session_id)"
 [ -z "$SESSION_ID" ] && SESSION_ID="default"
+TRANSCRIPT="$(json_field "$INPUT" transcript_path)"
 
 # Global kill switch.
 if [ "$(config_get enabled true)" != "true" ]; then
@@ -39,9 +40,9 @@ fi
 
 # Spawn the detached launcher (handles debounce, then renders the game).
 if command -v setsid >/dev/null 2>&1; then
-  setsid bash "$SCRIPT_DIR/_launch.sh" "$SESSION_ID" >>"$LOG_FILE" 2>&1 </dev/null &
+  setsid bash "$SCRIPT_DIR/_launch.sh" "$SESSION_ID" "$TRANSCRIPT" >>"$LOG_FILE" 2>&1 </dev/null &
 else
-  nohup bash "$SCRIPT_DIR/_launch.sh" "$SESSION_ID" >>"$LOG_FILE" 2>&1 </dev/null &
+  nohup bash "$SCRIPT_DIR/_launch.sh" "$SESSION_ID" "$TRANSCRIPT" >>"$LOG_FILE" 2>&1 </dev/null &
 fi
 disown 2>/dev/null || true
 

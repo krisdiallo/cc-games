@@ -24,9 +24,18 @@ UserPromptSubmit ──► start-trivia.sh     ──► (debounce) ──► ga
 PreToolUse       ──► tool-activity.sh    ──► touch <session>.go ──► render NOW (skip the rest of the debounce)
 Notification     ──► notify-attention.sh ──► touch <session>.attn ──► ⚠ banner + bell + macOS notification
 Pre/PostToolUse  ──► tool-activity.sh    ──► rm <session>.attn (Claude is working again)
-Stop             ──► stop-trivia.sh      ──► touch <session>.stop ──► game wraps up & closes
+Stop/StopFailure ──► stop-trivia.sh      ──► touch <session>.stop ──► game wraps up & closes
 SessionEnd       ──► cleanup.sh          ──► kill pane, delete markers
 ```
+
+**Escape interrupts:** no hook fires when you cancel a turn with Escape (the
+docs are explicit about this), so the launcher reads the session transcript
+just before rendering — if the turn's last entry is Claude Code's
+`[Request interrupted by user…]` marker, nothing is running and no window
+opens. An already-open game likewise closes itself after an interrupt has sat
+idle for ~45s; a quick Escape-edit-resubmit keeps the window and reuses it.
+`StopFailure` (turn died on an API error) is wired to the same wrap-up as
+`Stop`, so an errored turn can't strand the game either.
 
 **Claude is waiting on YOU:** when Claude blocks on a permission approval, a
 question, or goes idle, the `Notification` hook flips the game into an

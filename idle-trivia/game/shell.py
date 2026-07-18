@@ -30,8 +30,12 @@ import sys
 import time
 from datetime import date, timedelta
 
+import turnstate
+
 POLL_MS = 100            # input timeout / stop-file poll cadence
 FEEDBACK_SECONDS = 1.5   # how long correct/incorrect feedback shows
+TURNCHECK_SECONDS = 2.0  # how often to consult the transcript
+INTERRUPT_IDLE_SECONDS = 45  # Escape + this much silence = abandoned window
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, "config.example.json")
@@ -233,11 +237,14 @@ def close_own_terminal_window():
 # --------------------------------------------------------------------------- #
 
 class Shell:
-    def __init__(self, stdscr, cfg, state_dir, stop_file, games):
+    def __init__(self, stdscr, cfg, state_dir, stop_file, games,
+                 transcript_path=None):
         self.scr = stdscr
         self.cfg = cfg
         self.state_dir = state_dir
         self.stop_file = stop_file
+        self.transcript_path = transcript_path or None
+        self._next_turncheck = 0.0
         # <session>.attn — touched by the Notification hook when Claude is
         # blocked on the user (permission approval, question, idle prompt).
         self.attn_file = stop_file[:-len(".stop")] + ".attn"
@@ -274,6 +281,7 @@ class Shell:
             self.draw_header()
             self.scr.refresh()
         if not self.stop_requested():
+            self._check_abandoned()
             return
         if self._finish_question_mode():
             if not self.stop_pending:
@@ -281,6 +289,22 @@ class Shell:
                 self.draw_header()
                 self.scr.refresh()
         else:
+            raise ShellStop()
+
+    def _check_abandoned(self):
+        """Escape interrupts fire no hook, so no stop file ever arrives. If
+        the transcript's last entry is the interrupt marker and it has sat
+        there for a while, the user walked away — close up. (A quick
+        Escape-edit-resubmit keeps the window: the marker is younger than the
+        threshold, and the resubmit reuses this game.)"""
+        if not self.transcript_path:
+            return
+        now = time.monotonic()
+        if now < self._next_turncheck:
+            return
+        self._next_turncheck = now + TURNCHECK_SECONDS
+        interrupted, age = turnstate.last_turn_state(self.transcript_path)
+        if interrupted and age is not None and age > INTERRUPT_IDLE_SECONDS:
             raise ShellStop()
 
     # -- input primitives ---------------------------------------------------- #
@@ -537,7 +561,8 @@ class Shell:
             close_own_terminal_window()
 
 
-def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game):
+def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game,
+                transcript_path=None):
     curses.curs_set(0)
     curses.use_default_colors()
     if curses.has_colors():
@@ -547,4 +572,5 @@ def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game):
         curses.init_pair(BAD, curses.COLOR_RED, -1)
         curses.init_pair(WARN, curses.COLOR_YELLOW, -1)
         curses.init_pair(META, curses.COLOR_MAGENTA, -1)
-    Shell(stdscr, cfg, state_dir, stop_file, games).run(first_game)
+    Shell(stdscr, cfg, state_dir, stop_file, games,
+          transcript_path=transcript_path).run(first_game)

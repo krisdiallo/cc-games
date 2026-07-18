@@ -58,6 +58,7 @@ wanted = {
     "PostToolUse":      os.path.join(scripts, "tool-activity.sh"),
     "Notification":     os.path.join(scripts, "notify-attention.sh"),
     "Stop":             os.path.join(scripts, "stop-trivia.sh"),
+    "StopFailure":      os.path.join(scripts, "stop-trivia.sh"),
     "SessionEnd":       os.path.join(scripts, "cleanup.sh"),
 }
 
