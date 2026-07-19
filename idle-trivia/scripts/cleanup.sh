@@ -25,7 +25,9 @@ rm -f "$TRIVIA_HOME/$SESSION_ID.pid" \
       "$TRIVIA_HOME/$SESSION_ID.pane" \
       "$TRIVIA_HOME/$SESSION_ID.stop" \
       "$TRIVIA_HOME/$SESSION_ID.pending" \
-      "$TRIVIA_HOME/$SESSION_ID.go" 2>/dev/null || true
+      "$TRIVIA_HOME/$SESSION_ID.go" \
+      "$TRIVIA_HOME/$SESSION_ID.attn" \
+      "$TRIVIA_HOME/$SESSION_ID.quiet" 2>/dev/null || true
 
 log info "cleaned up ($SESSION_ID)"
 exit 0

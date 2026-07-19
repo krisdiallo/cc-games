@@ -11,5 +11,6 @@
   "categories": ["tech", "science", "general", "history"],
   "fallbackWithoutTmux": "terminal-window",
   "autoCloseTerminal": true,
+  "systemNotifications": true,
   "sound": false
 }

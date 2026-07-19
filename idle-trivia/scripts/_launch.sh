@@ -4,6 +4,7 @@
 # first (fast turn), in which case it exits silently with no pane-flash.
 
 SESSION_ID="${1:-default}"
+TRANSCRIPT="${2:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 . "$SCRIPT_DIR/common.sh"
@@ -38,7 +39,12 @@ while [ "$slept" -lt "$DEBOUNCE" ]; do
 done
 rm -f "$PENDING" "$GO_FILE" 2>/dev/null || true
 
-# Race guard: another launcher may have already rendered a game.
+# Race guard: another launcher (any session) may have already rendered a game
+# during our debounce. One window ever.
+if global_game_alive; then
+  log info "a game window opened during debounce; not spawning ($SESSION_ID)"
+  exit 0
+fi
 if [ -f "$TRIVIA_HOME/$SESSION_ID.pid" ] && \
    kill -0 "$(cat "$TRIVIA_HOME/$SESSION_ID.pid" 2>/dev/null)" 2>/dev/null; then
   log info "game already alive after debounce ($SESSION_ID)"
@@ -51,8 +57,18 @@ if [ -z "$PYTHON" ]; then
   exit 0
 fi
 
+# Escape guard: no hook fires when the user interrupts a turn (docs: "Stop
+# hooks don't fire on user interrupts"), but the transcript records it. If
+# the turn's last entry is the interrupt marker, there is nothing running —
+# don't open a window into the void.
+if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ] && \
+   "$PYTHON" "$SCRIPT_DIR/../game/turnstate.py" "$TRANSCRIPT" 2>/dev/null; then
+  log info "turn was interrupted (Escape); not rendering ($SESSION_ID)"
+  exit 0
+fi
+
 # The game watches STATE_DIR/<session>.stop and writes its own pid file.
-GAME_CMD="$PYTHON \"$GAME\" --session \"$SESSION_ID\" --state-dir \"$TRIVIA_HOME\""
+GAME_CMD="$PYTHON \"$GAME\" --session \"$SESSION_ID\" --state-dir \"$TRIVIA_HOME\" --transcript \"$TRANSCRIPT\""
 spawn_in_terminal "$GAME_CMD" "$SESSION_ID"
 
 exit 0

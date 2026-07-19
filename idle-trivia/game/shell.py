@@ -30,8 +30,12 @@ import sys
 import time
 from datetime import date, timedelta
 
+import turnstate
+
 POLL_MS = 100            # input timeout / stop-file poll cadence
 FEEDBACK_SECONDS = 1.5   # how long correct/incorrect feedback shows
+TURNCHECK_SECONDS = 2.0  # how often to consult the transcript
+INTERRUPT_IDLE_SECONDS = 45  # Escape + this much silence = abandoned window
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, "config.example.json")
@@ -233,11 +237,17 @@ def close_own_terminal_window():
 # --------------------------------------------------------------------------- #
 
 class Shell:
-    def __init__(self, stdscr, cfg, state_dir, stop_file, games):
+    def __init__(self, stdscr, cfg, state_dir, stop_file, games,
+                 transcript_path=None):
         self.scr = stdscr
         self.cfg = cfg
         self.state_dir = state_dir
         self.stop_file = stop_file
+        self.transcript_path = transcript_path or None
+        self._next_turncheck = 0.0
+        # <session>.attn — touched by the Notification hook when Claude is
+        # blocked on the user (permission approval, question, idle prompt).
+        self.attn_file = stop_file[:-len(".stop")] + ".attn"
         self.games = games                  # ordered list of Game instances
         self.game = None                    # current Game
         self.session_answered = 0
@@ -246,6 +256,7 @@ class Shell:
         self.best_streak = 0
         self.paused = False
         self.stop_pending = False           # stop seen in finish-question mode
+        self.attention = False              # Claude is waiting on the user
 
     # -- stop protocol ------------------------------------------------------ #
     def stop_requested(self):
@@ -256,8 +267,21 @@ class Shell:
 
     def _check_stop(self):
         """Raise ShellStop on stop — or, in finish-question mode, just set the
-        banner flag and let the current round complete."""
+        banner flag and let the current round complete. Also tracks the
+        attention marker (Claude waiting on the user) and rings once when it
+        appears."""
+        attn = os.path.exists(self.attn_file)
+        if attn != self.attention:
+            self.attention = attn
+            if attn:
+                try:
+                    curses.beep()
+                except curses.error:
+                    pass
+            self.draw_header()
+            self.scr.refresh()
         if not self.stop_requested():
+            self._check_abandoned()
             return
         if self._finish_question_mode():
             if not self.stop_pending:
@@ -265,6 +289,32 @@ class Shell:
                 self.draw_header()
                 self.scr.refresh()
         else:
+            raise ShellStop()
+
+    def _request_quit(self, session_wide):
+        """q = quit until the next prompt; Q = quit for the whole session
+        (drops a .quiet marker that start-trivia.sh honors)."""
+        if session_wide:
+            try:
+                open(self.stop_file[:-len(".stop")] + ".quiet", "w").close()
+            except OSError:
+                pass
+        raise ShellQuit()
+
+    def _check_abandoned(self):
+        """Escape interrupts fire no hook, so no stop file ever arrives. If
+        the transcript's last entry is the interrupt marker and it has sat
+        there for a while, the user walked away — close up. (A quick
+        Escape-edit-resubmit keeps the window: the marker is younger than the
+        threshold, and the resubmit reuses this game.)"""
+        if not self.transcript_path:
+            return
+        now = time.monotonic()
+        if now < self._next_turncheck:
+            return
+        self._next_turncheck = now + TURNCHECK_SECONDS
+        interrupted, age = turnstate.last_turn_state(self.transcript_path)
+        if interrupted and age is not None and age > INTERRUPT_IDLE_SECONDS:
             raise ShellStop()
 
     # -- input primitives ---------------------------------------------------- #
@@ -283,8 +333,8 @@ class Shell:
             self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -306,8 +356,8 @@ class Shell:
                 self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -326,8 +376,8 @@ class Shell:
             self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -351,8 +401,8 @@ class Shell:
                 ch = chr(c)
                 if ch == "p":
                     break
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
         self.paused = False
         self.draw_header()
         self.scr.refresh()
@@ -378,12 +428,18 @@ class Shell:
         if self.stop_pending:
             self.put(1, 0, " ✅ Claude's done — finish this round ",
                      curses.color_pair(WARN) | curses.A_BOLD)
+        elif self.attention:
+            self.put(1, 0, " ⚠ CLAUDE IS WAITING FOR YOU — check the Claude "
+                           "window (approval/question) ",
+                     curses.color_pair(BAD) | curses.A_BOLD | curses.A_REVERSE)
+        else:
+            self.put(1, 0, " " * (w - 1))   # clear a lifted banner
 
     def draw_footer(self):
         h, _ = self.scr.getmaxyx()
         help_txt = self.game.keys_help if self.game else ""
         extra = " · g next game" if len(self.games) > 1 else ""
-        self.put(h - 1, 0, f" {help_txt}{extra} · p pause · q quit ",
+        self.put(h - 1, 0, f" {help_txt}{extra} · p pause · q/Q quit ",
                  curses.color_pair(CHROME))
 
     def frame(self):
@@ -515,7 +571,8 @@ class Shell:
             close_own_terminal_window()
 
 
-def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game):
+def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game,
+                transcript_path=None):
     curses.curs_set(0)
     curses.use_default_colors()
     if curses.has_colors():
@@ -525,4 +582,5 @@ def curses_main(stdscr, cfg, state_dir, stop_file, games, first_game):
         curses.init_pair(BAD, curses.COLOR_RED, -1)
         curses.init_pair(WARN, curses.COLOR_YELLOW, -1)
         curses.init_pair(META, curses.COLOR_MAGENTA, -1)
-    Shell(stdscr, cfg, state_dir, stop_file, games).run(first_game)
+    Shell(stdscr, cfg, state_dir, stop_file, games,
+          transcript_path=transcript_path).run(first_game)

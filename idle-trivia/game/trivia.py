@@ -19,6 +19,7 @@ Stdlib only (curses) — no pip install required.
 
 import argparse
 import curses
+import fcntl
 import os
 import random
 import sys
@@ -41,6 +42,25 @@ def pick_first_game(games, choice):
     return random.choice(games)
 
 
+def acquire_global_lock(state_dir):
+    """One game window EVER, across all Claude sessions: take an exclusive
+    flock on state_dir/game.lock for this process's lifetime. The OS releases
+    the lock when the process dies, so it can never go stale. Returns the
+    held file object, or None if another game already owns the lock."""
+    path = os.path.join(state_dir, "game.lock")
+    try:
+        f = open(path, "a+")
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return None
+    # Record our pid so the hook scripts can skip spawning cheaply.
+    f.seek(0)
+    f.truncate()
+    f.write(str(os.getpid()))
+    f.flush()
+    return f
+
+
 def main():
     ap = argparse.ArgumentParser(description="Idle brain games")
     ap.add_argument("--session", default="default")
@@ -49,6 +69,8 @@ def main():
     ap.add_argument("--game", default=None,
                     help=f"start with this game ({', '.join(REGISTRY)}) "
                          "or 'random' (default: config)")
+    ap.add_argument("--transcript", default="",
+                    help="session transcript path (for Escape-interrupt detection)")
     ap.add_argument("--refresh", action="store_true",
                     help="fetch fresh questions from Open Trivia DB, then exit")
     ap.add_argument("--amount", type=int, default=50,
@@ -80,13 +102,21 @@ def main():
             pass
         return
 
+    # Another game window is already open (this or any other session):
+    # bow out silently and close the window we were spawned into.
+    lock = acquire_global_lock(args.state_dir)
+    if lock is None:
+        if cfg.get("autoCloseTerminal", True):
+            game_shell.close_own_terminal_window()
+        return
+
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
 
     game_shell.roll_daily_streak(args.state_dir)
     try:
         curses.wrapper(game_shell.curses_main, cfg, args.state_dir,
-                       stop_file, games, first)
+                       stop_file, games, first, args.transcript)
     finally:
         for p in (pid_file, stop_file):
             try:
