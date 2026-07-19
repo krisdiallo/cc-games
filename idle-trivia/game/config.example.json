@@ -5,7 +5,7 @@
   "stopBehavior": "linger",
   "lingerSeconds": 2,
   "paneHeight": 12,
-  "games": ["dungeon", "trivia", "sequences", "words", "simon", "nback"],
+  "games": ["dungeon", "snake", "trivia", "sequences", "words", "simon", "nback"],
   "game": "dungeon",
   "nbackN": 2,
   "categories": ["tech", "science", "general", "history"],

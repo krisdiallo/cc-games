@@ -42,6 +42,21 @@ DEFAULT_CONFIG = os.path.join(HERE, "config.example.json")
 
 CHROME, GOOD, BAD, WARN, META = 1, 2, 3, 4, 5
 
+# Arrow keys act as wasd everywhere (curses.wrapper enables keypad mode).
+ARROW_KEYS = {
+    curses.KEY_UP: "w", curses.KEY_DOWN: "s",
+    curses.KEY_LEFT: "a", curses.KEY_RIGHT: "d",
+}
+
+
+def _key_to_char(c):
+    """Translate a getch() code to a 1-char string, or None if unmapped."""
+    if c in ARROW_KEYS:
+        return ARROW_KEYS[c]
+    if 0 <= c < 256:
+        return chr(c)
+    return None
+
 
 class ShellStop(Exception):
     """Claude finished (stop file) — unwind to wrap-up."""
@@ -71,7 +86,8 @@ def load_config(state_dir):
     cfg.setdefault("stopBehavior", "linger")
     cfg.setdefault("lingerSeconds", 2)
     cfg.setdefault("categories", ["tech", "science", "general", "history"])
-    cfg.setdefault("games", ["trivia", "sequences", "words", "simon", "nback"])
+    cfg.setdefault("games", ["dungeon", "snake", "trivia", "sequences",
+                             "words", "simon", "nback"])
     cfg.setdefault("game", "random")
     cfg.setdefault("sound", False)
     cfg.setdefault("autoCloseTerminal", True)
@@ -331,8 +347,8 @@ class Shell:
         while True:
             c = self.scr.getch()
             self._check_stop()
-            if c != -1 and 0 <= c < 256:
-                ch = chr(c)
+            ch = _key_to_char(c) if c != -1 else None
+            if ch is not None:
                 if ch in "qQ":
                     self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
@@ -354,8 +370,8 @@ class Shell:
             c = self.scr.getch()
             if interruptible:
                 self._check_stop()
-            if c != -1 and 0 <= c < 256:
-                ch = chr(c)
+            ch = _key_to_char(c) if c != -1 else None
+            if ch is not None:
                 if ch in "qQ":
                     self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
@@ -374,8 +390,8 @@ class Shell:
         while time.monotonic() < deadline:
             c = self.scr.getch()
             self._check_stop()
-            if c != -1 and 0 <= c < 256:
-                ch = chr(c)
+            ch = _key_to_char(c) if c != -1 else None
+            if ch is not None:
                 if ch in "qQ":
                     self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:

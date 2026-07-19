@@ -9,6 +9,7 @@ Five games ship today (press `g` in-game to cycle between them):
 | Game | Config name | The gist |
 |------|-------------|----------|
 | **Dungeon** (default) | `dungeon` | A roguelite: one room per wait — telegraphed fights, chests, traps, shrines, merchants; a boss every 5th floor. Your hero **persists forever** (`dungeon.json`): a fight freezes mid-swing when Claude finishes and resumes on your next prompt, and dying banks shards for permanent guild upgrades. |
+| Snake | `snake` | Real-time, wasd **or arrow keys**. A run frozen when Claude finishes resumes exactly where it was next prompt; lifetime best persists (`snake.json`). Speeds up as you grow. |
 | Trivia | `trivia` | Multiple-choice questions from the bundled bank (+ Open Trivia DB refresh). |
 | Sequences | `sequences` | "2, 6, 18, 54, …?" — pick the next term; difficulty ramps with your streak. |
 | Word games | `words` | Anagram unscrambles and odd-one-out picks. |
@@ -107,6 +108,7 @@ To distribute, add it to a plugin marketplace repo and install with `/plugin`.
 | Key | Action |
 |-----|--------|
 | `1`–`4` | Answer / repeat pads (Simon) |
+| `wasd` / arrows | Steer (snake) |
 | `SPACE` | Match signal (n-back) |
 | `s` | Skip (multiple-choice games) |
 | `g` | Switch to the next game |
@@ -258,6 +260,7 @@ idle-trivia/
     ├── shell.py                 # shared shell: curses, stop protocol, stats
     ├── games/
     │   ├── dungeon.py           # persistent roguelite (saves to dungeon.json)
+    │   ├── snake.py             # real-time snake (freeze/resume, snake.json)
     │   ├── trivia.py            # MCQ trivia (+ --refresh)
     │   ├── sequences.py         # number patterns (procedural)
     │   ├── words.py             # anagrams + odd-one-out
