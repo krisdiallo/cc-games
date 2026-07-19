@@ -86,8 +86,8 @@ def load_config(state_dir):
     cfg.setdefault("stopBehavior", "linger")
     cfg.setdefault("lingerSeconds", 2)
     cfg.setdefault("categories", ["tech", "science", "general", "history"])
-    cfg.setdefault("games", ["dungeon", "snake", "trivia", "sequences",
-                             "words", "simon", "nback"])
+    cfg.setdefault("games", ["dungeon", "poker", "snake", "trivia",
+                             "sequences", "words", "simon", "nback"])
     cfg.setdefault("game", "random")
     cfg.setdefault("sound", False)
     cfg.setdefault("autoCloseTerminal", True)
