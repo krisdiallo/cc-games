@@ -13,9 +13,30 @@ SESSION_ID="$(json_field "$INPUT" session_id)"
 [ -z "$SESSION_ID" ] && SESSION_ID="default"
 TRANSCRIPT="$(json_field "$INPUT" transcript_path)"
 
-# Global kill switch.
+# Opt-outs, cheapest first.
+# 1. Per-session env: IDLE_TRIVIA=off claude   (env propagates to hooks)
+case "${IDLE_TRIVIA:-}" in
+  off|OFF|0|false|no)
+    log info "disabled via IDLE_TRIVIA env; skip ($SESSION_ID)"
+    exit 0 ;;
+esac
+
+# 2. Global config kill switch.
 if [ "$(config_get enabled true)" != "true" ]; then
   log info "disabled via config; skip start ($SESSION_ID)"
+  exit 0
+fi
+
+# 3. Per-project marker: touch .no-idle-trivia in a repo to keep it game-free.
+CWD="$(json_field "$INPUT" cwd)"
+if [ -n "$CWD" ] && [ -f "$CWD/.no-idle-trivia" ]; then
+  log info "disabled by $CWD/.no-idle-trivia; skip ($SESSION_ID)"
+  exit 0
+fi
+
+# 4. Per-session in-game opt-out: the user pressed Q (quit for session).
+if [ -f "$TRIVIA_HOME/$SESSION_ID.quiet" ]; then
+  log info "session muted by Q; skip ($SESSION_ID)"
   exit 0
 fi
 

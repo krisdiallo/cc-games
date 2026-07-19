@@ -112,6 +112,22 @@ To distribute, add it to a plugin marketplace repo and install with `/plugin`.
 | `g` | Switch to the next game |
 | `p` | Pause / resume |
 | `q` | Quit the game (won't respawn until your next prompt) |
+| `Q` | Quit for the **rest of this session** |
+
+## Turning it off
+
+Four scopes, checked in this order by the `UserPromptSubmit` hook:
+
+| Scope | How |
+|-------|-----|
+| One session | Launch with the env var: `IDLE_TRIVIA=off claude` (hooks inherit the CLI's environment). |
+| One project | `touch .no-idle-trivia` in the repo root — that directory stays game-free for everyone/every session. |
+| Rest of the current session | Press `Q` in the game. |
+| Everywhere, until re-enabled | `"enabled": false` in `~/.claude/trivia/config.json`. |
+
+Notifications about Claude waiting on you are independent of the game and
+still fire when the game is off; silence those with
+`"systemNotifications": false`.
 
 Each answer shows instant correct/incorrect feedback + a one-line explanation,
 then advances. A running streak and accuracy sit in the header. Lifetime and

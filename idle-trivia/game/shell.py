@@ -291,6 +291,16 @@ class Shell:
         else:
             raise ShellStop()
 
+    def _request_quit(self, session_wide):
+        """q = quit until the next prompt; Q = quit for the whole session
+        (drops a .quiet marker that start-trivia.sh honors)."""
+        if session_wide:
+            try:
+                open(self.stop_file[:-len(".stop")] + ".quiet", "w").close()
+            except OSError:
+                pass
+        raise ShellQuit()
+
     def _check_abandoned(self):
         """Escape interrupts fire no hook, so no stop file ever arrives. If
         the transcript's last entry is the interrupt marker and it has sat
@@ -323,8 +333,8 @@ class Shell:
             self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -346,8 +356,8 @@ class Shell:
                 self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -366,8 +376,8 @@ class Shell:
             self._check_stop()
             if c != -1 and 0 <= c < 256:
                 ch = chr(c)
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
                 if ch == "g" and len(self.games) > 1:
                     raise ShellSwitch()
                 if ch == "p":
@@ -391,8 +401,8 @@ class Shell:
                 ch = chr(c)
                 if ch == "p":
                     break
-                if ch == "q":
-                    raise ShellQuit()
+                if ch in "qQ":
+                    self._request_quit(ch == "Q")
         self.paused = False
         self.draw_header()
         self.scr.refresh()
@@ -429,7 +439,7 @@ class Shell:
         h, _ = self.scr.getmaxyx()
         help_txt = self.game.keys_help if self.game else ""
         extra = " · g next game" if len(self.games) > 1 else ""
-        self.put(h - 1, 0, f" {help_txt}{extra} · p pause · q quit ",
+        self.put(h - 1, 0, f" {help_txt}{extra} · p pause · q/Q quit ",
                  curses.color_pair(CHROME))
 
     def frame(self):
