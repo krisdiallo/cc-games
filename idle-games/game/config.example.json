@@ -6,7 +6,7 @@
   "lingerSeconds": 2,
   "paneHeight": 12,
   "games": ["dungeon", "poker", "snake", "trivia", "sequences", "words", "simon", "nback"],
-  "game": "dungeon",
+  "game": "poker",
   "nbackN": 2,
   "pokerLLM": false,
   "pokerLLMModel": "haiku",

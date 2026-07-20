@@ -8,9 +8,9 @@ Five games ship today (press `g` in-game to cycle between them):
 
 | Game | Config name | The gist |
 |------|-------------|----------|
-| **Dungeon** (default) | `dungeon` | A roguelite: one room per wait — telegraphed fights, chests, traps, shrines, merchants; a boss every 5th floor. Your hero **persists forever** (`dungeon.json`): a fight freezes mid-swing when Claude finishes and resumes on your next prompt, and dying banks shards for permanent guild upgrades. |
+| **Dungeon** | `dungeon` | A roguelite: one room per wait — telegraphed fights, chests, traps, shrines, merchants; a boss every 5th floor. Your hero **persists forever** (`dungeon.json`): a fight freezes mid-swing when Claude finishes and resumes on your next prompt, and dying banks shards for permanent guild upgrades. |
 | Snake | `snake` | Real-time, wasd **or arrow keys**. A run frozen when Claude finishes resumes exactly where it was next prompt; lifetime best persists (`snake.json`). Speeds up as you grow. |
-| **Poker** | `poker` | 5-max no-limit hold'em vs four AI personalities (The Rock, The Fish, The Shark, The Prof). Stateful (`poker.json`): bankroll, biggest pot, and the live hand **freeze mid-street and resume** across sessions. Built-in trainer: every decision graded vs pot odds/equity (postflop) or 5-max charts (preflop), EV-priced mistakes, post-hand review, and a recurring leak report — and the villains exploit the same leaks it reports (The Shark bluffs more once you're shown to overfold). Optional `pokerLLM` layer makes villains real `claude -p` (Haiku) players with table talk + a post-hand coach line, with hard timeouts and silent fallback to the offline bots. |
+| **Poker** (default) | `poker` | 5-max no-limit hold'em vs four AI personalities (The Rock, The Fish, The Shark, The Prof). Stateful (`poker.json`): bankroll, biggest pot, and the live hand **freeze mid-street and resume** across sessions. Built-in trainer: every decision graded vs pot odds/equity (postflop) or 5-max charts (preflop), EV-priced mistakes, post-hand review, and a recurring leak report — and the villains exploit the same leaks it reports (The Shark bluffs more once you're shown to overfold). Optional `pokerLLM` layer makes villains real `claude -p` (Haiku) players with table talk + a post-hand coach line, with hard timeouts and silent fallback to the offline bots. |
 | Trivia | `trivia` | Multiple-choice questions from the bundled bank (+ Open Trivia DB refresh). |
 | Sequences | `sequences` | "2, 6, 18, 54, …?" — pick the next term; difficulty ramps with your streak. |
 | Word games | `words` | Anagram unscrambles and odd-one-out picks. |
@@ -169,7 +169,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `lingerSeconds` | Summary dwell time for `linger`. |
 | `paneHeight` | tmux split height, in rows. |
 | `games` | Which games are enabled (see the table up top). `g` cycles through these. |
-| `game` | Which game starts a session: a game name (default `dungeon`), or `random`. |
+| `game` | Which game starts a session: a game name (default `poker`), or `random`. |
 | `nbackN` | N for the n-back game (default 2). |
 | `pokerLLM` | `true` = villain decisions + coach lines via `claude -p` (spends API tokens; ~1–3s per decision). Any failure/timeout silently falls back to the offline bots. Subprocesses run with `IDLE_GAMES=off` so headless hooks can't spawn games recursively. Default `false`. |
 | `pokerLLMModel` | Model for the poker LLM layer (default `haiku`). |
