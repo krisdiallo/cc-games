@@ -124,9 +124,20 @@ class PokerGame:
         shell.put(y, x, f"[{pe.card_str(c)}]",
                   curses.color_pair(3 if red else 0) | curses.A_BOLD)
 
+    def _rows(self, shell):
+        """Layout: compact 2x2 villains for a 12-row pane; one villain per row
+        with breathing room when the window is taller (GUI terminals)."""
+        h, _ = shell.scr.getmaxyx()
+        if h >= 16:
+            return {"roomy": True, "villain0": 4, "board": 9, "you": 11,
+                    "menu": 13, "note": 15}
+        return {"roomy": False, "villain0": 3, "board": 5, "you": 6,
+                "menu": 7, "note": 8}
+
     def _table(self, shell, st, note="", reveal=False):
-        run = self.p["run"]
+        rows = self._rows(shell)
         shell.frame()
+        hero_pos = pe.position_of(HERO, st["button"], 5)
         shell.put(2, 2, f"hand #{self.p['hands'] + 1} · blinds {pe.SB}/{pe.BB}"
                         f" · bankroll {self.p['bankroll'] + st['seats'][HERO]['stack']}◆"
                         f" · best pot {self.p['biggest_pot']}",
@@ -137,39 +148,50 @@ class PokerGame:
         for k in range(4):
             i = k + 1
             s = st["seats"][i]
-            col = 2 + (k % 2) * 30
-            row = 3 + k // 2
+            pos = pe.position_of(i, st["button"], 5)
+            if rows["roomy"]:
+                row, col = rows["villain0"] + k, 2
+            else:
+                row, col = rows["villain0"] + k // 2, 2 + (k % 2) * 34
             state = "folded" if not s["in"] else acted.get(s["name"], "·")
             hole = ""
             if reveal and s["in"] and st.get("showdown"):
                 hole = f" {pe.card_str(s['hole'][0])}{pe.card_str(s['hole'][1])}"
             mark = "▶" if pe.to_act(st) == i else " "
-            shell.put(row, col, f"{mark}{s['name']} {s['stack']}{hole} · {state}",
+            shell.put(row, col, f"{mark}{s['name']}",
+                      0 if s["in"] else curses.color_pair(5))
+            shell.put(row, col + 11, f"{pos:>3}",
+                      curses.color_pair(4) | curses.A_BOLD if pos in ("BTN", "SB", "BB")
+                      else curses.color_pair(5))
+            shell.put(row, col + 15, f"{s['stack']}{hole} · {state}",
                       0 if s["in"] else curses.color_pair(5))
         board = st["board"]
-        shell.put(5, 2, "board:", curses.color_pair(5))
+        shell.put(rows["board"], 2, "board:", curses.color_pair(5))
         for j, c in enumerate(board):
-            self._card(shell, 5, 9 + j * 5, c)
+            self._card(shell, rows["board"], 9 + j * 5, c)
         if not board:
-            shell.put(5, 9, "· · ·", curses.color_pair(5))
-        shell.put(5, 34, f"pot {pe.pot_size(st)}", curses.A_BOLD)
+            shell.put(rows["board"], 9, "· · ·", curses.color_pair(5))
+        shell.put(rows["board"], 36, f"pot {pe.pot_size(st)}", curses.A_BOLD)
         hero = st["seats"][HERO]
-        shell.put(6, 2, "you:", curses.A_BOLD)
-        self._card(shell, 6, 7, hero["hole"][0])
-        self._card(shell, 6, 12, hero["hole"][1])
+        yrow = rows["you"]
+        shell.put(yrow, 2, "you", curses.A_BOLD)
+        shell.put(yrow, 6, f"{hero_pos:>3}",
+                  curses.color_pair(4) | curses.A_BOLD if hero_pos in ("BTN", "SB", "BB")
+                  else curses.color_pair(5))
+        self._card(shell, yrow, 11, hero["hole"][0])
+        self._card(shell, yrow, 16, hero["hole"][1])
         o = pe.owed(st, HERO)
-        shell.put(6, 18, f"stack {hero['stack']}"
-                         + (f" · to call {o}" if o and hero["in"] else ""))
+        shell.put(yrow, 22, f"stack {hero['stack']}"
+                            + (f" · to call {o}" if o and hero["in"] else ""))
         if pe.to_act(st) == HERO:
-            o = pe.owed(st, HERO)
             target = pe.raise_target(st, HERO)
             labels = ["1 fold" if o else "1 fold(=check)",
                       f"2 {'call ' + str(o) if o else 'check'}",
                       f"3 raise→{min(target, hero['cr'] + hero['stack'])}",
                       "4 shove"]
-            shell.put(7, 2, "   ".join(labels), curses.A_BOLD)
+            shell.put(rows["menu"], 2, "   ".join(labels), curses.A_BOLD)
         if note:
-            shell.put(8, 2, note[:70], curses.color_pair(4))
+            shell.put(rows["note"], 2, note[:70], curses.color_pair(4))
         shell.scr.refresh()
 
     # -- hero stats the villains exploit -------------------------------------- #
@@ -295,20 +317,21 @@ class PokerGame:
         self._save()
 
         self._table(shell, st, reveal=True)
-        h, _ = shell.scr.getmaxyx()
+        rows = self._rows(shell)
         who = " · ".join(f"{k} +{v}" for k, v in st["winners"].items())
-        shell.put(7, 2, f"{'★' if net > 0 else '·'} {who}   (you {net:+}◆)",
+        shell.put(rows["menu"], 2, f"{'★' if net > 0 else '·'} {who}   (you {net:+}◆)",
                   curses.color_pair(2 if net > 0 else 5) | curses.A_BOLD)
         bad = [g for g in run["grades"] if g[2] != "✓"]
         line = " · ".join(f"{STREETS[g[0]]} {g[2]} {g[4]}" for g in bad[:2]) \
             or "clean hand — every decision ✓"
-        shell.put(8, 2, ("review: " + line)[:76], curses.color_pair(4))
+        shell.put(rows["note"], 2, ("review: " + line)[:76], curses.color_pair(4))
         leak = self._leak_line()
         if leak:
-            shell.put(9, 2, leak[:76], curses.color_pair(5))
+            shell.put(rows["note"] + 1, 2, leak[:76], curses.color_pair(5))
         coach = self._coach(st, run) if bad else None
         if coach:
-            shell.put(9, 2, ("coach: " + coach)[:76], curses.color_pair(5))
+            shell.put(rows["note"] + 1, 2, ("coach: " + coach)[:76],
+                      curses.color_pair(5))
         shell.draw_footer()
         shell.scr.refresh()
         shell.get_key(timeout=7.0, accept="1234 ")
