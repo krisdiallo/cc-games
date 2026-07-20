@@ -14,7 +14,7 @@ Training stack, always on and offline:
 Optional LLM layer (config "pokerLLM": true): villain decisions and a
 post-hand coach line via `claude -p` (haiku), with a hard timeout and
 silent fallback to the heuristic bots. Subprocesses run with
-IDLE_TRIVIA=off so headless hooks can't spawn games recursively.
+IDLE_GAMES=off so headless hooks can't spawn games recursively.
 """
 
 import curses
@@ -85,7 +85,7 @@ class PokerGame:
     def _llm(self, prompt, timeout):
         if not self.cfg.get("pokerLLM", False):
             return None
-        env = dict(os.environ, IDLE_TRIVIA="off")
+        env = dict(os.environ, IDLE_GAMES="off")
         try:
             r = subprocess.run(
                 ["claude", "-p", prompt, "--model",

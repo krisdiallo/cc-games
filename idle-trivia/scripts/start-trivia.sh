@@ -14,10 +14,10 @@ SESSION_ID="$(json_field "$INPUT" session_id)"
 TRANSCRIPT="$(json_field "$INPUT" transcript_path)"
 
 # Opt-outs, cheapest first.
-# 1. Per-session env: IDLE_TRIVIA=off claude   (env propagates to hooks)
-case "${IDLE_TRIVIA:-}" in
+# 1. Per-session env: IDLE_GAMES=off claude   (env propagates to hooks)
+case "${IDLE_GAMES:-}" in
   off|OFF|0|false|no)
-    log info "disabled via IDLE_TRIVIA env; skip ($SESSION_ID)"
+    log info "disabled via IDLE_GAMES env; skip ($SESSION_ID)"
     exit 0 ;;
 esac
 

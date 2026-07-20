@@ -123,7 +123,7 @@ Four scopes, checked in this order by the `UserPromptSubmit` hook:
 
 | Scope | How |
 |-------|-----|
-| One session | Launch with the env var: `IDLE_TRIVIA=off claude` (hooks inherit the CLI's environment). |
+| One session | Launch with the env var: `IDLE_GAMES=off claude` (hooks inherit the CLI's environment). |
 | One project | `touch .no-idle-trivia` in the repo root — that directory stays game-free for everyone/every session. |
 | Rest of the current session | Press `Q` in the game. |
 | Everywhere, until re-enabled | `"enabled": false` in `~/.claude/trivia/config.json`. |
@@ -171,7 +171,7 @@ Edit `~/.claude/trivia/config.json` (seeded from
 | `games` | Which games are enabled (see the table up top). `g` cycles through these. |
 | `game` | Which game starts a session: a game name (default `dungeon`), or `random`. |
 | `nbackN` | N for the n-back game (default 2). |
-| `pokerLLM` | `true` = villain decisions + coach lines via `claude -p` (spends API tokens; ~1–3s per decision). Any failure/timeout silently falls back to the offline bots. Subprocesses run with `IDLE_TRIVIA=off` so headless hooks can't spawn games recursively. Default `false`. |
+| `pokerLLM` | `true` = villain decisions + coach lines via `claude -p` (spends API tokens; ~1–3s per decision). Any failure/timeout silently falls back to the offline bots. Subprocesses run with `IDLE_GAMES=off` so headless hooks can't spawn games recursively. Default `false`. |
 | `pokerLLMModel` | Model for the poker LLM layer (default `haiku`). |
 | `categories` | Trivia: which categories to draw from (also which ones `--refresh` pulls). |
 | `autoCloseTerminal` | On macOS Terminal.app / iTerm2, auto-close the game's own window on wrap-up. Set `false` if you'd rather close it yourself. |
