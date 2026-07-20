@@ -1,0 +1,8 @@
+{
+  "name": "idle-games",
+  "version": "1.0.0",
+  "description": "Fills Claude Code's wait-state with interruptible brain games (trivia, dungeon roguelite, snake, poker vs AI) in a side terminal/pane, and gets out of the way the instant Claude finishes.",
+  "author": { "name": "John" },
+  "keywords": ["games", "trivia", "poker", "roguelite", "hooks", "productivity", "wait-state"],
+  "hooks": "./hooks/hooks.json"
+}

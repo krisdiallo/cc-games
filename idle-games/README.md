@@ -1,4 +1,4 @@
-# Idle Trivia (& friends)
+# Idle Games
 
 Fills Claude Code's wait-state with interruptible brain games. When you submit
 a prompt, a small game pops up in a **side terminal window or tmux pane**; the
@@ -96,7 +96,7 @@ The repo is already laid out as a plugin (`.claude-plugin/plugin.json` +
 `hooks/hooks.json`). Test it locally:
 
 ```bash
-claude --plugin-dir ./idle-trivia
+claude --plugin-dir ./idle-games
 # iterate with /reload-plugins
 ```
 
@@ -124,7 +124,7 @@ Four scopes, checked in this order by the `UserPromptSubmit` hook:
 | Scope | How |
 |-------|-----|
 | One session | Launch with the env var: `IDLE_GAMES=off claude` (hooks inherit the CLI's environment). |
-| One project | `touch .no-idle-trivia` in the repo root — that directory stays game-free for everyone/every session. |
+| One project | `touch .no-idle-games` in the repo root — that directory stays game-free for everyone/every session. |
 | Rest of the current session | Press `Q` in the game. |
 | Everywhere, until re-enabled | `"enabled": false` in `~/.claude/trivia/config.json`. |
 
@@ -246,7 +246,7 @@ plus `stats.json` (flock-guarded for multiple concurrent sessions) and
 ## Layout
 
 ```
-idle-trivia/
+idle-games/
 ├── .claude-plugin/plugin.json   # plugin manifest
 ├── hooks/hooks.json             # hook config (uses ${CLAUDE_PLUGIN_ROOT})
 ├── scripts/
