@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for idle-trivia hook scripts.
+# Shared helpers for idle-games hook scripts.
 # Sourced by start-trivia.sh, stop-trivia.sh, cleanup.sh and _launch.sh.
 #
 # Design rules (see spec §4 "Handler contract"):
@@ -115,7 +115,7 @@ spawn_in_terminal() {
   # 4. No UI available (e.g. bare SSH). Warn once, then stay silent.
   local warn="$TRIVIA_HOME/.no-terminal-warned"
   if [ ! -f "$warn" ]; then
-    log warn "No tmux and no GUI terminal found; idle-trivia cannot render a game. (Shown once.)"
+    log warn "No tmux and no GUI terminal found; idle-games cannot render a game. (Shown once.)"
     touch "$warn" 2>/dev/null || true
   fi
   return 1

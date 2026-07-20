@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase-1 personal installer: wires the idle-trivia hooks into your user
+# Phase-1 personal installer: wires the idle-games hooks into your user
 # settings.json (in place — no file copying, so `git pull` keeps you current)
 # and seeds a default config. Optional M0 spinner-facts install.
 #
@@ -93,7 +93,7 @@ with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
     f.write("\n")
 
-print(f"{'installed' if mode=='install' else 'removed'} idle-trivia hooks in {settings_path}")
+print(f"{'installed' if mode=='install' else 'removed'} idle-games hooks in {settings_path}")
 PY
 
 echo "done. Restart Claude Code (or run /hooks) to pick up the change."

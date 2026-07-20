@@ -27,10 +27,10 @@ if [ "$(config_get enabled true)" != "true" ]; then
   exit 0
 fi
 
-# 3. Per-project marker: touch .no-idle-trivia in a repo to keep it game-free.
+# 3. Per-project marker: touch .no-idle-games in a repo to keep it game-free.
 CWD="$(json_field "$INPUT" cwd)"
-if [ -n "$CWD" ] && [ -f "$CWD/.no-idle-trivia" ]; then
-  log info "disabled by $CWD/.no-idle-trivia; skip ($SESSION_ID)"
+if [ -n "$CWD" ] && [ -f "$CWD/.no-idle-games" ]; then
+  log info "disabled by $CWD/.no-idle-games; skip ($SESSION_ID)"
   exit 0
 fi
 
